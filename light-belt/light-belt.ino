@@ -32,16 +32,18 @@ void setup() {
  
 // the loop routine runs over and over again forever:
 void loop() {
+  //Need to find the mode as given by users motion
   while(mode == 0) {
     
   }
+  //In dancing mode
   while (mode == 1) {
     
   }
+  //In runnning mode
   while (mode == 2) {
     
   }
-  //If it gets to here then mode is still unset so need to find it.s
   Serial.print("Accel X: "); Serial.print(" ");
   lsm.read();
   Serial.print("Accel X: "); Serial.print((int)lsm.accelData.x); Serial.print(" ");
