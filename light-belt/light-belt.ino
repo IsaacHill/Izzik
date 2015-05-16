@@ -1,13 +1,16 @@
 #include <Wire.h>
+#include <Adafruit_Sensor.h>
 #include <Adafruit_LSM303.h>
 #include <Adafruit_NeoPixel.h>
-#include <avr/power.h>
+#include <Math.h>
+
 #define PIN 6
 Adafruit_LSM303 lsm;
 
 const float Pi = 3.14159;
 int start = 0;
 
+float heading = 0;
 int prevX = 0;
 int currentX = 0;
 
@@ -17,12 +20,13 @@ int currentY = 0;
 int prevZ = 0;
 int currentZ = 0;
 
-int prevZMag = 0;
-int currentZMag = 0;
-
-//Initialize mode as unset, 1 defines dancing 2 definces running.
-int mode = 0;
-int i = 0;
+float currentDirection = 0;
+float previousDirection = 0;
+//Initialize mode as unset, 1 defines dancing 2 defines running.
+float mode = 0;
+float set = 0;
+float i = 0;
+//Initialize strip (chain of leds), first input is number of leds in chain.
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, PIN, NEO_GRB + NEO_KHZ800);
 
 
@@ -32,7 +36,7 @@ void setup() {
   strip.show();
   while (!Serial);
   Serial.begin(9600); 
-  Serial.println("Accelerometer Test"); Serial.println(""); 
+  Serial.println("currentelerometer Test"); Serial.println(""); 
   // initialize the digital pin as an output.   
   if(!lsm.begin())
   {
@@ -44,35 +48,34 @@ void setup() {
  
 // the loop routine runs over and over again forever:
 void loop() {
+  //Sets up reading frame for lsm.
+  lsm.read();
+  currentX = (int)lsm.accelData.x;
+  currentY = (int)lsm.accelData.y; 
+  currentZ = (int)lsm.accelData.z;
   //Need to find the mode as given by users motion
   while(mode == 0) {
-    lsm.read();
-    if(prevX == 0 && prevY == 0 &&prevZ) {
-       prevX = (int)lsm.accelData.x;
-       prevY = (int)lsm.accelData.y;
-       prevZ = (int)lsm.accelData.z;
-       prevZMag = (int)lsm.magData.z;
-     } 
-     else{
-       currentX = (int)lsm.accelData.x;
-       currentY = (int)lsm.accelData.y; 
-       currentZ = (int)lsm.accelData.z;
-       currentZMag = (int)lsm.magData.z;
+     //Find the current orientation of the device
+     currentDirection = (atan2(lsm.magData.y,lsm.magData.x) * 180) / Pi;
+     //We need to normalize this value to be between 0 < 360
+     if(currentDirection < 0) {
+      currentDirection = currentDirection + 360; 
      }
-     //Serial.print("Base X: "); Serial.print((int)lsm.accelData.x); Serial.print(" ");
-     //Serial.print("Y: "); Serial.print((int)lsm.accelData.y);       Serial.print(" ");
-     //Serial.print("Z: "); Serial.println((int)lsm.accelData.z);     Serial.print(" ");
-     //Serial.print("Mag Z: "); Serial.print((int)lsm.magData.z);     Serial.print(" ");
-     //Serial.print("CHANGE X: "); Serial.print(prevX - currentX); Serial.print(" ");
-     //Serial.print("Y: "); Serial.print((int)prevY - currentY);       Serial.print(" ");
-     //Serial.print("Z: "); Serial.println((int)prevZ - currentZ);     Serial.print(" ");
-     //Serial.print("MaG Z: "); Serial.print((int)prevZMag - currentZMag);     Serial.print(" ");
-     float direction = (atan2(lsm.magData.y,lsm.magData.x) * 180) / Pi;
-     Serial.print(direction); Serial.print(" ");
-     prevX = currentX;
-     prevY = currentY;
-     prevZ = currentZ;
-     if(i == 0) {
+     //If we know the previous direction and acceleration
+     if(set == 1) {
+       detectMode();
+     }
+     //If we dont then we need to set them and wait.
+     else{
+       previousDirection = currentDirection;
+       prevX = currentX;
+       prevY = currentY;
+       prevZ = currentZ;
+       set = 1;    
+     }
+     //Placeholder light cycling for testing, (lights stop cycling
+     //if a mode is chosen or the code hangs for whatever reason).
+    if(i == 0) {
       colorWipe(strip.Color(0, 0, 255),strip.Color(255,0, 0), 100);
       i = 1; 
     }
@@ -80,42 +83,35 @@ void loop() {
       colorWipe(strip.Color(102, 0, 255),strip.Color(0, 0,255), 100);
       i=0;
     }
-     delay(200);
+    //Placeholder delay need to test how fast the specific motions take,
+    //i.e spinning etc probably should be lower.
+    delay(200);
   }
-  //In dancing mode
-  //while (mode == 1) {
-  //  
-  //}
-  //In runnning mode
-  //while (mode == 2) {
-  //  
-  //}
-  Serial.print("Accel X: "); Serial.print(" ");
-  lsm.read();
-  Serial.print("Accel X: "); Serial.print((int)lsm.accelData.x); Serial.print(" ");
-  Serial.print("Y: "); Serial.print((int)lsm.accelData.y);       Serial.print(" ");
-  Serial.print("Z: "); Serial.println((int)lsm.accelData.z);     Serial.print(" ");
-  Serial.print("Mag X: "); Serial.print((int)lsm.magData.x);     Serial.print(" ");
-  Serial.print("Y: "); Serial.print((int)lsm.magData.y);         Serial.print(" ");
-  Serial.print("Z: "); Serial.println((int)lsm.magData.z);       Serial.print(" ");
-  if(start = 0){
-     prevX = lsm.accelData.x;
-     prevY = lsm.accelData.y;
-     start = 1;
-  }
-  //if(lsm.accelData.x - prevX >  100) {
-  //     colorWipe(strip.Color(0, 255, 0),strip.Color(0, 0,255), 0);
-  //}
-  //  if(lsm.accelData.x -prevX < -100) {
-  //     colorWipe(strip.Color(0, 0, 255),strip.Color(255,0, 0), 0);
-  //}
-  Serial.print("Yo");
-
-  Serial.print("Oh");
-  prevX = lsm.accelData.x;
-  prevY = lsm.accelData.y;
   delay(300);
+  while(mode  == 1) {
+    colorWipe(strip.Color(255, 0, 255),strip.Color(255, 255,255), 100);
+  }
+  while(mode == 2) {
+    colorWipe(strip.Color(0, 0, 255),strip.Color(0, 255,255), 100);
+  }
 }
+
+//Detects if the users motion is setting a mode and if so
+//sets mode to the relevant integer.
+void detectMode() {
+  float rotation = abs(currentDirection - previousDirection);
+    //This could be Y cant check till monday!
+  float acceleration = abs(prevX - currentX);
+  if(rotation > 20 ) {
+    mode = 1;
+  }
+  //Detects if user is accelerating forward and isnt rotating
+  //and if so sets belt to running mode.
+  else if(acceleration > 50) {
+     mode = 2; 
+  }
+}
+
 
 void colorWipe(uint32_t c,uint32_t d, uint8_t wait) {
   for(uint16_t i=0; i<strip.numPixels(); i++) {
