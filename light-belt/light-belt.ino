@@ -27,7 +27,7 @@ float mode = 0;
 float set = 0;
 float i = 0;
 //Initialize strip (chain of leds), first input is number of leds in chain.
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(4, PIN, NEO_GRB + NEO_KHZ800);
 
 
 void setup() {
@@ -48,15 +48,18 @@ void setup() {
  
 // the loop routine runs over and over again forever:
 void loop() {
-  //Sets up reading frame for lsm.
-  lsm.read();
-  currentX = (int)lsm.accelData.x;
-  currentY = (int)lsm.accelData.y; 
-  currentZ = (int)lsm.accelData.z;
   //Need to find the mode as given by users motion
   while(mode == 0) {
+     //Sets up reading frame for lsm
+     lsm.read();
+     currentX = (int)lsm.accelData.x;
+     currentY = (int)lsm.accelData.y; 
+     currentZ = (int)lsm.accelData.z;
+     Serial.println("Yo");
      //Find the current orientation of the device
      currentDirection = (atan2(lsm.magData.y,lsm.magData.x) * 180) / Pi;
+     Serial.println("Current Direction");
+     Serial.println(currentDirection);
      //We need to normalize this value to be between 0 < 360
      if(currentDirection < 0) {
       currentDirection = currentDirection + 360; 
@@ -83,15 +86,28 @@ void loop() {
       colorWipe(strip.Color(102, 0, 255),strip.Color(0, 0,255), 100);
       i=0;
     }
+    previousDirection = currentDirection;
     //Placeholder delay need to test how fast the specific motions take,
     //i.e spinning etc probably should be lower.
     delay(200);
   }
   delay(300);
   while(mode  == 1) {
+     //Sets up reading frame for lsm
+     lsm.read();
+     currentX = (int)lsm.accelData.x;
+     currentY = (int)lsm.accelData.y; 
+     currentZ = (int)lsm.accelData.z;
+    Serial.println("Rotation");
     colorWipe(strip.Color(255, 0, 255),strip.Color(255, 255,255), 100);
   }
   while(mode == 2) {
+     //Sets up reading frame for lsm
+     lsm.read();
+     currentX = (int)lsm.accelData.x;
+     currentY = (int)lsm.accelData.y; 
+     currentZ = (int)lsm.accelData.z;
+    Serial.println("Running");
     colorWipe(strip.Color(0, 0, 255),strip.Color(0, 255,255), 100);
   }
 }
@@ -100,14 +116,18 @@ void loop() {
 //sets mode to the relevant integer.
 void detectMode() {
   float rotation = abs(currentDirection - previousDirection);
+  Serial.println(currentDirection);
+  Serial.println(previousDirection);
     //This could be Y cant check till monday!
   float acceleration = abs(prevX - currentX);
+  Serial.println("rotation");
+  Serial.println(rotation);
   if(rotation > 20 ) {
     mode = 1;
   }
   //Detects if user is accelerating forward and isnt rotating
   //and if so sets belt to running mode.
-  else if(acceleration > 50) {
+  else if(acceleration > 390) {
      mode = 2; 
   }
 }
