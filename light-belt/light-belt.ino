@@ -160,171 +160,60 @@ void detectMode() {
 
 //Mode that loops when mode is set to running
 void runningMode() {
-  //Get new info from accelerometer/magnetometer
-  getValues();
-  Serial.println("Im setting");
-  //check if user is braking.
-  checkBraking();
-  Serial.println("Im setting 7/8");
-  if(braking == 1) {
-    showBraking();
-  }
-  //For the first two sets of lights this is an if
-  //else as if they are breaking they wont have rotating colours.
-  else{
-    strip.setPixelColor(7, colorArray[2]);
-    strip.setPixelColor(8, colorArray[2]);
-    //Reset previous leds to white.
-    strip.setPixelColor(0, colorArray[0]);
-    strip.setPixelColor(15, colorArray[0]);
-  }
-  strip.show();
+  int k = 7;
+  int j = 8;
+  while(j < 16) {
+  runningSetPixel(k,j);
+  k--;
+  j++;
   delay(200);
-  //Get new info from accelerometer/magnetometer
-  getValues();
-  checkBraking();
-  Serial.println("Im setting 6/9");
-  if(braking == 1) {
-    showBraking();
   }
-  //For the first two sets of lights this is an if
-  //else as if they are breaking they wont have rotating colours.
-  else{
-    strip.setPixelColor(6, colorArray[2]);
-    strip.setPixelColor(9, colorArray[2]);
-    //Reset previous leds to white.
-    strip.setPixelColor(7, colorArray[0]);
-    strip.setPixelColor(8, colorArray[0]);
-  }
-  strip.show();
-  delay(200);
-  //Get new info from accelerometer/magnetometer
-  getValues();
-  checkBraking();
-  Serial.println("Im setting 5/10");
-  if(braking == 1) {
-    showBraking();
-  }
-  //If braking  = 2 then the checkBraking just 
-  //changed from braking to not breaking so reset back lights.
-  if(braking == 2){
-     clearBraking();
-     //Re initialize braking.
-     braking = 0;
-  }
-  strip.setPixelColor(5, colorArray[2]);
-  strip.setPixelColor(10, colorArray[2]);
-  strip.show();
-  delay(200);
-  //Get new info from accelerometer/magnetometer
-  getValues();
-  checkBraking();
-  Serial.println("Im setting 4/11");
-  if(braking == 1) {
-    showBraking();
-  }
-  //If braking  = 2 then the checkBraking just 
-  //changed from braking to not breaking so reset back lights.
-  if(braking == 2){
-     clearBraking();
-     //Re initialize braking.
-     braking = 0;
-  }
-  strip.setPixelColor(4, colorArray[2]);
-  strip.setPixelColor(11, colorArray[2]);
-  //Reset previous leds to white.
-  strip.setPixelColor(5, colorArray[0]);
-  strip.setPixelColor(10, colorArray[0]);
-  strip.show();
-  delay(200);
-  //Get new info from accelerometer/magnetometer
-  getValues();
-  checkBraking();
-  Serial.println("Im setting 3/12");
-  if(braking == 1) {
-    showBraking();
-  }
-  //If braking  = 2 then the checkBraking just 
-  //changed from braking to not breaking so reset back lights.
-  if(braking == 2){
-     clearBraking();
-     //Re initialize braking.
-     braking = 0;
-  }
-  strip.setPixelColor(3, colorArray[2]);
-  strip.setPixelColor(12, colorArray[2]);
-  //Reset previous leds to white.
-  strip.setPixelColor(4, colorArray[0]);
-  strip.setPixelColor(9, colorArray[0]);
-  strip.show();
-  delay(200);
-      //Get new info from accelerometer/magnetometer
-  getValues();
-  checkBraking();
-  Serial.println("Im setting 2/13");
-  if(braking == 1) {
-    showBraking();
-  }
-  //If braking  = 2 then the checkBraking just 
-  //changed from braking to not breaking so reset back lights.
-  if(braking == 2){
-     clearBraking();
-     //Re initialize braking.
-     braking = 0;
-  }
-  strip.setPixelColor(2, colorArray[2]);
-  strip.setPixelColor(13, colorArray[2]);
-  //Reset previous leds to white.
-  strip.setPixelColor(3, colorArray[0]);
-  strip.setPixelColor(9, colorArray[0]);
-  strip.show();
-  delay(200);
-      //Get new info from accelerometer/magnetometer
-  getValues();
-  checkBraking();
-  Serial.println("Im setting 1/14");
-  if(braking == 1) {
-    showBraking();
-  }
-  //If braking  = 2 then the checkBraking just 
-  //changed from braking to not breaking so reset back lights.
-  if(braking == 2){
-     clearBraking();
-     //Re initialize braking.
-     braking = 0;
-  }
-  strip.setPixelColor(1, colorArray[2]);
-  strip.setPixelColor(14, colorArray[2]);
-  //Reset previous leds to white.
-  strip.setPixelColor(2, colorArray[0]);
-  strip.setPixelColor(13, colorArray[0]);
-  strip.show();
-  delay(200);
-      //Get new info from accelerometer/magnetometer
-  getValues();
-  checkBraking();
-  Serial.println("Im setting 0/15");
-  if(braking == 1) {
-    showBraking();
-  }
-  //If braking  = 2 then the checkBraking just 
-  //changed from braking to not breaking so reset back lights.
-  if(braking == 2){
-     clearBraking();
-     //Re initialize braking.
-     braking = 0;
-  }
-  strip.setPixelColor(0, colorArray[2]);
-  strip.setPixelColor(15, colorArray[2]);
-  //Reset previous leds to white.
-  strip.setPixelColor(1, colorArray[0]);
-  strip.setPixelColor(14, colorArray[0]);
-  strip.show();
-  delay(200);
-  
-  
 }
 
+
+void runningSetPixel(int k, int j) {
+  getValues();
+  checkBraking();
+  if(braking == 1) {
+    showBraking();
+  }
+  //If braking  = 2 then the checkBraking just 
+  //changed from braking to not breaking so reset back lights.
+  if(braking == 2){
+     clearBraking();
+     //Re initialize braking.
+     braking = 0;
+  }
+  if(braking == 1 && k == 7 || k == 6) {
+    if( k == 7) {
+        strip.setPixelColor(0, colorArray[0]);
+        strip.setPixelColor(15, colorArray[0]);
+      
+    }
+    else {
+        strip.setPixelColor(k - 1, colorArray[0]);
+        strip.setPixelColor(j - 1, colorArray[0]); 
+      
+    }
+  }
+  else {
+    strip.setPixelColor(k, colorArray[2]);
+    strip.setPixelColor(j, colorArray[2]);
+    //Reset previous leds to white.
+    if(k != 7) {
+      strip.setPixelColor(k + 1, colorArray[0]);
+      strip.setPixelColor(j - 1, colorArray[0]);
+    }
+    else{
+      strip.setPixelColor(0, colorArray[0]);
+      strip.setPixelColor(15, colorArray[0]); 
+    }
+  }
+  strip.show();
+}
+
+//Checks if user is currently braking and sets
+//braking to reflect current status.
 void checkBraking() {
   if((prevX - currentX) >= BRAKETHRESHOLD) {
     Serial.print("Im braking");
