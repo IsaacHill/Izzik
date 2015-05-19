@@ -26,11 +26,18 @@ float previousDirection = 0;
 //Initialize mode as unset, 1 defines dancing 2 defines running.
 int mode = 0;
 
-#define BRAKETHRESHOLD = 0;
+//Constants for running mode that define breaking.
+#define BRAKETHRESHOLD    200
+
+//defines whether the user is currently slowing down
+//0 defines not currently slowing down, 1 defines that they are i.e they 
+//are slowing down at faster than the BRAKETHRESHOLD. If braking is equal to 
+//2 then that signifies that the user was just braking but is no
+//longer. Initialize to 0, not breaking.
+int braking = 0;
 
 
-
-float set = 0;
+int set = 0;
 float i = 0;
 
 //Initialize strip (chain of leds), first input is number of leds in chain.
@@ -41,9 +48,23 @@ float i = 0;
 //   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(16, PIN, NEO_GRB + NEO_KHZ800);
 
+//Array of colours arranged in order of severity/intensity
+uint32_t colorArray [10] = {strip.Color(255,255,255),
+                   strip.Color(153,204,255),
+                   strip.Color(0,0,255),
+                   strip.Color(153,255,51),
+                   strip.Color(0,204,204),
+                   strip.Color(204,204,204),
+                   strip.Color(251,51,153),
+                   strip.Color(255,255,0),
+                   strip.Color(255,128,0),
+                   strip.Color(255,0,0)};
+
+
+
 void setup() {
   strip.begin();
-  strip.setBrightness(5);
+  strip.setBrightness(20);
   strip.show();
   Serial.begin(9600);
   Serial.println("currentelerometer Test"); Serial.println("");
@@ -92,27 +113,29 @@ void loop() {
     rainbowCycle(1.5);
   }
   while (mode  == 1) {
-    //Sets up reading frame for lsm
-    lsm.read();
-    currentX = (int)lsm.accelData.x;
-    currentY = (int)lsm.accelData.y;
-    currentZ = (int)lsm.accelData.z;
+    //Get new info from accelerometer/magnetometer
+    getValues();
     Serial.println("Rotation");
-    colorWipe(strip.Color(255, 0, 255), strip.Color(255, 255, 255), 100);
   }
   while (mode == 2) {
-    //Sets up reading frame for lsm
+    Serial.println("Running");
+    runningMode();
+    //Placeholder light cycling for testing, (lights stop cycling
+    //if a mode is chosen or the code hangs for whatever reason).
+    //flashTest(200);
+    //colorWipe(strip.Color(0, 0, 255),strip.Color(0, 255,255), 100);
+  }
+}
+
+//Read in new data from accelerometer/magnetometer
+void getValues() {
+    prevX = currentX;
+    prevY = currentY;
+    prevZ = currentZ;
     lsm.read();
     currentX = (int)lsm.accelData.x;
     currentY = (int)lsm.accelData.y;
     currentZ = (int)lsm.accelData.z;
-    Serial.println("Running");
-    detectRunning();
-    //Placeholder light cycling for testing, (lights stop cycling
-    //if a mode is chosen or the code hangs for whatever reason).
-    flashTest(100);
-    //colorWipe(strip.Color(0, 0, 255),strip.Color(0, 255,255), 100);
-  }
 }
 
 //Detects if the users motion is setting a mode and if so
@@ -125,7 +148,7 @@ void detectMode() {
   float acceleration = abs(prevX - currentX);
   Serial.println("rotation");
   Serial.println(rotation);
-  if (rotation > 20 ) {
+  if (rotation > 90 ) {
     mode = 1;
   }
   //Detects if user is accelerating forward and isnt rotating
@@ -135,29 +158,205 @@ void detectMode() {
   }
 }
 
+//Mode that loops when mode is set to running
+void runningMode() {
+  //Get new info from accelerometer/magnetometer
+  getValues();
+  Serial.println("Im setting");
+  //check if user is braking.
+  checkBraking();
+  Serial.println("Im setting 7/8");
+  if(braking == 1) {
+    showBraking();
+  }
+  //For the first two sets of lights this is an if
+  //else as if they are breaking they wont have rotating colours.
+  else{
+    strip.setPixelColor(7, colorArray[2]);
+    strip.setPixelColor(8, colorArray[2]);
+    //Reset previous leds to white.
+    strip.setPixelColor(0, colorArray[0]);
+    strip.setPixelColor(15, colorArray[0]);
+  }
+  strip.show();
+  delay(200);
+  //Get new info from accelerometer/magnetometer
+  getValues();
+  checkBraking();
+  Serial.println("Im setting 6/9");
+  if(braking == 1) {
+    showBraking();
+  }
+  //For the first two sets of lights this is an if
+  //else as if they are breaking they wont have rotating colours.
+  else{
+    strip.setPixelColor(6, colorArray[2]);
+    strip.setPixelColor(9, colorArray[2]);
+    //Reset previous leds to white.
+    strip.setPixelColor(7, colorArray[0]);
+    strip.setPixelColor(8, colorArray[0]);
+  }
+  strip.show();
+  delay(200);
+  //Get new info from accelerometer/magnetometer
+  getValues();
+  checkBraking();
+  Serial.println("Im setting 5/10");
+  if(braking == 1) {
+    showBraking();
+  }
+  //If braking  = 2 then the checkBraking just 
+  //changed from braking to not breaking so reset back lights.
+  if(braking == 2){
+     clearBraking();
+     //Re initialize braking.
+     braking = 0;
+  }
+  strip.setPixelColor(5, colorArray[2]);
+  strip.setPixelColor(10, colorArray[2]);
+  strip.show();
+  delay(200);
+  //Get new info from accelerometer/magnetometer
+  getValues();
+  checkBraking();
+  Serial.println("Im setting 4/11");
+  if(braking == 1) {
+    showBraking();
+  }
+  //If braking  = 2 then the checkBraking just 
+  //changed from braking to not breaking so reset back lights.
+  if(braking == 2){
+     clearBraking();
+     //Re initialize braking.
+     braking = 0;
+  }
+  strip.setPixelColor(4, colorArray[2]);
+  strip.setPixelColor(11, colorArray[2]);
+  //Reset previous leds to white.
+  strip.setPixelColor(5, colorArray[0]);
+  strip.setPixelColor(10, colorArray[0]);
+  strip.show();
+  delay(200);
+  //Get new info from accelerometer/magnetometer
+  getValues();
+  checkBraking();
+  Serial.println("Im setting 3/12");
+  if(braking == 1) {
+    showBraking();
+  }
+  //If braking  = 2 then the checkBraking just 
+  //changed from braking to not breaking so reset back lights.
+  if(braking == 2){
+     clearBraking();
+     //Re initialize braking.
+     braking = 0;
+  }
+  strip.setPixelColor(3, colorArray[2]);
+  strip.setPixelColor(12, colorArray[2]);
+  //Reset previous leds to white.
+  strip.setPixelColor(4, colorArray[0]);
+  strip.setPixelColor(9, colorArray[0]);
+  strip.show();
+  delay(200);
+      //Get new info from accelerometer/magnetometer
+  getValues();
+  checkBraking();
+  Serial.println("Im setting 2/13");
+  if(braking == 1) {
+    showBraking();
+  }
+  //If braking  = 2 then the checkBraking just 
+  //changed from braking to not breaking so reset back lights.
+  if(braking == 2){
+     clearBraking();
+     //Re initialize braking.
+     braking = 0;
+  }
+  strip.setPixelColor(2, colorArray[2]);
+  strip.setPixelColor(13, colorArray[2]);
+  //Reset previous leds to white.
+  strip.setPixelColor(3, colorArray[0]);
+  strip.setPixelColor(9, colorArray[0]);
+  strip.show();
+  delay(200);
+      //Get new info from accelerometer/magnetometer
+  getValues();
+  checkBraking();
+  Serial.println("Im setting 1/14");
+  if(braking == 1) {
+    showBraking();
+  }
+  //If braking  = 2 then the checkBraking just 
+  //changed from braking to not breaking so reset back lights.
+  if(braking == 2){
+     clearBraking();
+     //Re initialize braking.
+     braking = 0;
+  }
+  strip.setPixelColor(1, colorArray[2]);
+  strip.setPixelColor(14, colorArray[2]);
+  //Reset previous leds to white.
+  strip.setPixelColor(2, colorArray[0]);
+  strip.setPixelColor(13, colorArray[0]);
+  strip.show();
+  delay(200);
+      //Get new info from accelerometer/magnetometer
+  getValues();
+  checkBraking();
+  Serial.println("Im setting 0/15");
+  if(braking == 1) {
+    showBraking();
+  }
+  //If braking  = 2 then the checkBraking just 
+  //changed from braking to not breaking so reset back lights.
+  if(braking == 2){
+     clearBraking();
+     //Re initialize braking.
+     braking = 0;
+  }
+  strip.setPixelColor(0, colorArray[2]);
+  strip.setPixelColor(15, colorArray[2]);
+  //Reset previous leds to white.
+  strip.setPixelColor(1, colorArray[0]);
+  strip.setPixelColor(14, colorArray[0]);
+  strip.show();
+  delay(200);
+  
+  
+}
 
-void colorWipe(uint32_t c, uint32_t d, uint8_t wait) {
-  for (uint16_t i = 0; i < strip.numPixels(); i++) {
-    if (i == 0) {
-      strip.setPixelColor(i, c);
-      strip.show();
-      delay(wait);
-    }
-    else {
-      strip.setPixelColor(i, d);
-      strip.show();
-      delay(wait);
-    }
+void checkBraking() {
+  if((prevX - currentX) >= BRAKETHRESHOLD) {
+    Serial.print("Im braking");
+    braking = 1;}
+  else{
+   if(braking == 1) {
+     braking = 2; }
+   else {
+     braking = 0;}
   }
 }
 
-//Mode that loops when mode is set to running
-void detectRunning() {
-  Serial.println(currentX);
-
-
-
+void clearBraking() {
+    strip.setPixelColor(0, colorArray[0]);
+    strip.setPixelColor(1, colorArray[0]);
+    strip.setPixelColor(2, colorArray[0]);
+    strip.setPixelColor(3, colorArray[0]);
+  
 }
+
+//Set rear lights to red to denote breaking.
+void showBraking() {
+    strip.setPixelColor(0, colorArray[9]);
+    strip.setPixelColor(1, colorArray[9]);
+    strip.setPixelColor(2, colorArray[9]);
+    strip.setPixelColor(3, colorArray[9]);
+    strip.show(); 
+}
+
+//Clear rear lights when no braking is detected.
+
+
 // Slightly different, this makes the rainbow equally distributed throughout
 void rainbowCycle(uint8_t wait) {
   uint16_t i, j;
@@ -171,19 +370,26 @@ void rainbowCycle(uint8_t wait) {
   }
 }
 
-void flashTest(uint8_t wait) {
-  Serial.println("asdasd");
-  strip.setPixelColor(0, strip.Color(0, 0, 255));
-  strip.setPixelColor(2, strip.Color(0, 0, 255));
-  delay(wait);
-  strip.setPixelColor(1, strip.Color(0, 255, 255));
-  strip.setPixelColor(3, strip.Color(0, 255, 255));
-  delay(wait);
-  strip.setPixelColor(1, strip.Color(0, 0, 255));
-  strip.setPixelColor(3, strip.Color(0, 0, 255));
-  delay(wait);
-  strip.setPixelColor(0, strip.Color(0, 255, 255));
-  strip.setPixelColor(2, strip.Color(0, 255, 255));
+//Testing for flashing alternating lights
+void flashTest(int wait) {
+  Serial.println(i);
+  Serial.println(colorArray[4]);
+  Serial.println(strip.Color(0,204,204));
+  if(i == 0){
+    strip.setPixelColor(0, colorArray[9]);
+    strip.setPixelColor(2, colorArray[9]);
+    strip.setPixelColor(1, colorArray[4]);
+    strip.setPixelColor(3, colorArray[4]);
+    i = 1;
+  }
+  else{
+    strip.setPixelColor(1, colorArray[9]);
+    strip.setPixelColor(3, colorArray[9]);
+    strip.setPixelColor(0, colorArray[4]);
+    strip.setPixelColor(2, colorArray[4]);
+    i = 0;
+  }
+  strip.show();
   delay(wait);
 }
 
