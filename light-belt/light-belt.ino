@@ -28,6 +28,7 @@ int mode = 0;
 
 //Constants for running mode that define breaking.
 #define BRAKETHRESHOLD    200
+#define BRAKETIME
 
 //defines whether the user is currently slowing down
 //0 defines not currently slowing down, 1 defines that they are i.e they 
@@ -164,7 +165,7 @@ void runningMode() {
   int j = 8;
   while(j < 16) {
   runningSetPixel(k,j);
-  k--;
+  k--;faf`
   j++;
   delay(200);
   }
@@ -200,7 +201,7 @@ void runningSetPixel(int k, int j) {
     strip.setPixelColor(k, colorArray[2]);
     strip.setPixelColor(j, colorArray[2]);
     //Reset previous leds to white.
-    if(k != 7) {
+    if(k != 7 ) {
       strip.setPixelColor(k + 1, colorArray[0]);
       strip.setPixelColor(j - 1, colorArray[0]);
     }
