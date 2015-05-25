@@ -4,31 +4,35 @@
 #include <Adafruit_NeoPixel.h>
 #include <Math.h>
 
+//Define the output pin which will be used for the Neo Pixels
 #define PIN 6
+//Define a name for the accelerometer for ease of reference.
 Adafruit_LSM303 lsm;
 
 //Initialize Pi, for degree calculations
 const float Pi = 3.14159;
-int start = 0;
+//Variable to check if file is running for the first time.
+int firstRun = 0;
 
-float heading = 0;
-int prevX = 0;
-int currentX = 0;
+//Variable for previous acceleration in X direction
+float prevX = 0;
+//Variable for current accerlation in X direction
+float currentX = 0;
+//Variable for previous acceleration in Y direction
+float prevY = 0;
+//Variable for current acceleration in Y direction
+float currentY = 0;
 
-int prevY = 0;
-int currentY = 0;
-
-int prevZ = 0;
-int currentZ = 0;
-
+//Variable for current direction in degrees from North
 float currentDirection = 0;
+//Variable for previous direction in degrees from North.
 float previousDirection = 0;
 //Initialize mode as unset, 1 defines dancing 2 defines running.
 int mode = 0;
 
 //Constants for running mode that define breaking.
 #define BRAKETHRESHOLD    200
-#define BRAKETIME
+#define BRAKETIME         200
 
 //defines whether the user is currently slowing down
 //0 defines not currently slowing down, 1 defines that they are i.e they 
@@ -86,7 +90,6 @@ void loop() {
     lsm.read();
     currentX = (int)lsm.accelData.x;
     currentY = (int)lsm.accelData.y;
-    currentZ = (int)lsm.accelData.z;
     Serial.println("Yo");
     //Find the current orientation of the device
     currentDirection = (atan2(lsm.magData.y, lsm.magData.x) * 180) / Pi;
@@ -97,7 +100,7 @@ void loop() {
       currentDirection = currentDirection + 360;
     }
     //If we know the previous direction and acceleration
-    if (set == 1) {
+    if (firstRun == 1) {
       detectMode();
     }
     //If we dont then we need to set them and wait.
@@ -105,8 +108,7 @@ void loop() {
       previousDirection = currentDirection;
       prevX = currentX;
       prevY = currentY;
-      prevZ = currentZ;
-      set = 1;
+      firstRun = 1;
     }
     previousDirection = currentDirection;
     //Placeholder delay need to test how fast the specific motions take,
@@ -114,9 +116,8 @@ void loop() {
     rainbowCycle(1.5);
   }
   while (mode  == 1) {
-    //Get new info from accelerometer/magnetometer
-    getValues();
-    Serial.println("Rotation");
+    dancingMode();
+    Serial.println("Dancing");
   }
   while (mode == 2) {
     Serial.println("Running");
@@ -132,11 +133,9 @@ void loop() {
 void getValues() {
     prevX = currentX;
     prevY = currentY;
-    prevZ = currentZ;
     lsm.read();
     currentX = (int)lsm.accelData.x;
     currentY = (int)lsm.accelData.y;
-    currentZ = (int)lsm.accelData.z;
 }
 
 //Detects if the users motion is setting a mode and if so
@@ -159,13 +158,22 @@ void detectMode() {
   }
 }
 
+//function that loops when mode is set to dancing.
+void dancingMode() {
+  
+  
+  
+  
+  
+}
+
 //Mode that loops when mode is set to running
 void runningMode() {
   int k = 7;
   int j = 8;
   while(j < 16) {
   runningSetPixel(k,j);
-  k--;faf`
+  k--;
   j++;
   delay(200);
   }
