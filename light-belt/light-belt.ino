@@ -6,66 +6,6 @@
 
 //Define the output pin which will be used for the Neo Pixels
 #define PIN 6
-//Define a name for the accelerometer for ease of reference.
-Adafruit_LSM303 lsm;
-
-//Initialize Pi, for degree calculations
-const float Pi = 3.14159;
-//Variable to check if file is running for the first time.
-int firstRun = 0;
-
-//Variable for previous acceleration in X direction
-float prevX = 0;
-//Variable for current accerlation in X direction
-float currentX = 0;
-//Variable for previous acceleration in Y direction
-float prevY = 0;
-//Variable for current acceleration in Y direction
-float currentY = 0;
-//Variable for current direction in degrees from North
-float currentDirection = 0;
-//Variable for previous direction in degrees from North.
-float previousDirection = 0;
-//Variable for dance mode that defines light positions initilized to
-//3 i.e the fourth LED.
-int danceLocation = 3;
-//Variable to define direction of LED motion in dancing mode.
-//Initialize to 1 (positive).
-int danceDirection = 1;
-
-
-//Initialize mode as unset, 1 defines dancing 2 defines running.
-int mode = 0;
-int changeAccelColour = 4;
-int colourLED = 0;
-//Constants for running mode that define breaking.
-#define BRAKETHRESHOLD    200
-#define BRAKETIME         200
-//Constants for accelerometer normalization.
-float xMin = -2040;
-float xMax = 2040;
-float yMin = -2040;
-float yMax = 2040;
-//defines whether the user is currently slowing down
-//0 defines not currently slowing down, 1 defines that they are i.e they
-//are slowing down at faster than the BRAKETHRESHOLD. If braking is equal to
-//2 then that signifies that the user was just braking but is no
-//longer. Initialize to 0, not breaking.
-int braking = 0;
-
-//left counter variable for running
-int leftIn = 2;
-//right counter variable for running
-int rightIn = 3;
-
-int set = 0;
-float i = 0;
-
-//the timer used for detecting when breaks must be cleared
-long breakTime;
-
-unsigned long interval = 500;
-
 
 //Initialize strip (chain of leds), first input is number of leds in chain.
 // Parameter 1 = number of pixels in strip
@@ -117,20 +57,70 @@ uint32_t colorArray [40] = {strip.Color(32, 32, 32),
                             strip.Color(229, 255, 204),
                             strip.Color(96, 96, 96),
                            };
+                           
 //Due to the nature of assignments and pointers in c
-//this variable contains the soze of the colorArray, for
+//this variable contains the size of the colorArray, for
 //ease of use.
 int colourSize = 40;
 
 
+//Define a name for the accelerometer for ease of reference.
+Adafruit_LSM303 lsm;
+
+//Initialize Pi, for degree calculations
+const float pi = 3.14159;
+//Variable to check if arduino is running the first loop.
+int firstRun = 0;
+
+//Variable for previous acceleration in X direction
+float prevX = 0;
+//Variable for current accerlation in X direction
+float currentX = 0;
+//Variable for previous acceleration in Y direction
+float prevY = 0;
+//Variable for current acceleration in Y direction
+float currentY = 0;
+//Variable for current direction in degrees from North
+float currentDirection = 0;
+//Variable for previous direction in degrees from North.
+float previousDirection = 0;
+//Variable for dance mode that defines light positions initilized to
+//3 i.e the fourth LED.
+int danceLocation = 3;
+//Variable to define direction of LED motion in dancing mode.
+//Initialize to 1 (positive).
+int danceDirection = 1;
+
+
+//Initialize mode as unset, 1 defines dancing 2 defines running.
+int mode = 0;
+
+int changeAccelColour = 4;
+int colourLED = 0;
+
+//Constants for accelerometer normalization.
+float xMin = -2040;
+float xMax = 2040;
+float yMin = -2040;
+float yMax = 2040;
+
+//left counter variable for running
+int leftIn = 2;
+//right counter variable for running
+int rightIn = 3;
+
+
+//the timer used for detecting when breaks must be cleared
+long breakTime;
+
+//Runs whenn arduino is first turn
 void setup() {
   strip.begin();
   strip.setBrightness(255);
   strip.show();
   Serial.begin(9600);
   // initialize the digital pin as an output.
-  if (!lsm.begin())
-  {
+  if (!lsm.begin()) {
     /* There was a problem detecting the ADXL345 ... check your connections */
     Serial.println("Ooops, no LSM303 detected ... Check your wiring!");
     while (1);
@@ -145,11 +135,8 @@ void loop() {
     lsm.read();
     currentX = (int)lsm.accelData.x;
     currentY = (int)lsm.accelData.y;
-    Serial.println("Yo");
     //Find the current orientation of the device
-    currentDirection = (atan2(lsm.magData.y, lsm.magData.x) * 180) / Pi;
-    Serial.println("Current Direction");
-    Serial.println(currentDirection);
+    currentDirection = (atan2(lsm.magData.y, lsm.magData.x) * 180) / pi;
     //We need to normalize this value to be between 0 < 360
     if (currentDirection < 0) {
       currentDirection = currentDirection + 360;
@@ -166,8 +153,8 @@ void loop() {
       firstRun = 1;
     }
     previousDirection = currentDirection;
-    //Placeholder delay need to test how fast the specific motions take,
-    //i.e spinning etc probably should be lower.
+    //While Waiting for inputs to detect mode, show rainbow
+    //rotation to inform user.
     rainbowCycle(1.5);
   }
   while (mode  == 1) {
@@ -175,10 +162,6 @@ void loop() {
   }
   while (mode == 2) {
     runningMode();
-    //Placeholder light cycling for testing, (lights stop cycling
-    //if a mode is chosen or the code hangs for whatever reason).
-    //flashTest(200);
-    //colorWipe(strip.Color(0, 0, 255),strip.Color(0, 255,255), 100);
   }
 }
 
@@ -190,7 +173,7 @@ void getValues() {
   lsm.read();
   currentX = (int)lsm.accelData.x;
   currentY = (int)lsm.accelData.y;
-  currentDirection = (atan2(lsm.magData.y, lsm.magData.x) * 180) / Pi;
+  currentDirection = (atan2(lsm.magData.y, lsm.magData.x) * 180) / pi;
   if (changeAccelColour % 4 == 0) {
     //Normalize acceleration
     float xNorm = abs(currentX) / xMax;
@@ -218,7 +201,7 @@ void detectMode() {
   }
   //Detects if user is accelerating forward and isnt rotating
   //and if so sets belt to running mode.
-  else if (acceleration > 100) {
+  else if (acceleration > 400) {
     mode = 2;
   }
 }
@@ -276,13 +259,6 @@ void setDance() {
   strip.show();
 }
 
-//Sets the lights based on the danceLocationC and
-//the danceLocationN. direction defines how what direction around the belt
-//the lights will be travelling, 0 and 1 define crossing between LED 0 and
-//15, while 2 and 3 define traveling in either direction around the belt.
-void setDanceLights(int direction) {
-
-}
 
 //Mode that loops when mode is set to running
 void runningMode() {
@@ -304,82 +280,24 @@ void runningMode() {
 
 void runningSetPixel() {
   getValues();
-  checkBraking();
-  if (braking == 1) {
-    breakTime = millis();
-    showBraking();
-  }
-  //If braking  = 2 then the checkBraking just
-  //changed from braking to not breaking so reset back lights.
-  if (braking == 2) {
-    clearBraking();
-    //Re initialize braking.
-    braking = 0;
-  }
-  if (braking == 1 && leftIn == 9 || leftIn == 10) {
-    if (leftIn == 10) {
-       strip.setPixelColor(leftIn - 1, colorArray[0]);
-       strip.setPixelColor(rightIn - 1, colorArray[0]);
-    }
-  }
-  else {
-    Serial.print("this is the k");
-    Serial.println(leftIn);
-    strip.setPixelColor(leftIn, colorArray[2]);
-    strip.setPixelColor(rightIn, colorArray[2]);
-    //Reset previous led to white.
-    if (leftIn == 2) {
-      strip.setPixelColor(10, colorArray[0]);
-      strip.setPixelColor(11, colorArray[0]);
-      strip.setPixelColor(leftIn, colorArray[2]);
-      strip.setPixelColor(rightIn, colorArray[2]);   
-    } else {
-      if (leftIn != 11) {
-      	strip.setPixelColor((leftIn+1)%16, colorArray[0]);
-      	strip.setPixelColor(rightIn-1, colorArray[0]);
-      } else {
-        strip.setPixelColor((leftIn+1)%16, colorArray[0]);
-      	strip.setPixelColor(rightIn-1, colorArray[0]);
-  
-      }
-    }
-  }
-  strip.show();
-}
-
-//Checks if user is currently braking and sets
-//braking to reflect current status.
-void checkBraking() {
-  if ((prevX - currentX) >= BRAKETHRESHOLD) {
-    Serial.print("Im braking");
-    braking = 1;
-  }
-  else {
-    if (braking == 1) {
-      braking = 2;
-    }
-    else {
-      braking = 0;
-    }
-  }
-}
-
-//Clear breaking when no breaking is detected.
-void clearBraking() {
-  if (millis() - breakTime > interval) {
-    strip.setPixelColor(9, colorArray[0]);
+  Serial.println(leftIn);
+  strip.setPixelColor(leftIn, colorArray[colourLED]);
+  strip.setPixelColor(rightIn, colorArray[colourLED]);
+  //Reset previous led to white.
+  if (leftIn == 2) {
     strip.setPixelColor(10, colorArray[0]);
     strip.setPixelColor(11, colorArray[0]);
-    strip.setPixelColor(12, colorArray[0]);
-  }
-}
-
-//Set rear lights to red to denote breaking.
-void showBraking() {
-  strip.setPixelColor(9, colorArray[31]);
-  strip.setPixelColor(10, colorArray[31]);
-  strip.setPixelColor(11, colorArray[31]);
-  strip.setPixelColor(12, colorArray[31]);
+    strip.setPixelColor(leftIn, colorArray[colourLED]);
+    strip.setPixelColor(rightIn, colorArray[colourLED]);   
+   } else {
+     if (leftIn != 11) {
+       strip.setPixelColor((leftIn+1)%16, colorArray[0]);
+       strip.setPixelColor(rightIn-1, colorArray[0]);
+     } else {
+       strip.setPixelColor((leftIn+1)%16, colorArray[0]);
+      strip.setPixelColor(rightIn-1, colorArray[0]);  
+     }
+    }
   strip.show();
 }
 
@@ -394,29 +312,6 @@ void rainbowCycle(uint8_t wait) {
     strip.show();
     delay(wait);
   }
-}
-
-//Testing for flashing alternating lights
-void flashTest(int wait) {
-  Serial.println(i);
-  Serial.println(colorArray[4]);
-  Serial.println(strip.Color(0, 204, 204));
-  if (i == 0) {
-    strip.setPixelColor(0, colorArray[9]);
-    strip.setPixelColor(2, colorArray[9]);
-    strip.setPixelColor(1, colorArray[4]);
-    strip.setPixelColor(3, colorArray[4]);
-    i = 1;
-  }
-  else {
-    strip.setPixelColor(1, colorArray[9]);
-    strip.setPixelColor(3, colorArray[9]);
-    strip.setPixelColor(0, colorArray[4]);
-    strip.setPixelColor(2, colorArray[4]);
-    i = 0;
-  }
-  strip.show();
-  delay(wait);
 }
 
 // Input a value 0 to 255 to get a color value.
