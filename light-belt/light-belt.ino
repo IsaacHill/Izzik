@@ -63,7 +63,6 @@ uint32_t colorArray [40] = {strip.Color(32, 32, 32),
 //ease of use.
 int colourSize = 40;
 
-
 //Define a name for the accelerometer for ease of reference.
 Adafruit_LSM303 lsm;
 
@@ -95,7 +94,10 @@ int danceDirection = 1;
 //Initialize mode as unset, 1 defines dancing 2 defines running.
 int mode = 0;
 
+//An integer to track when the acceleration Colour should be changed
 int changeAccelColour = 4;
+//An integer to store which location in the colour array will be accesed
+//to set colour on the belt.
 int colourLED = 0;
 
 //Constants for accelerometer normalization.
@@ -171,7 +173,7 @@ void loop() {
     previousDirection = currentDirection;
     //While Waiting for inputs to detect mode, show rainbow
     //rotation to inform user.
-    rainbowCycle(1.5);
+    lightCycle(1.5);
   }
   //If mode == 1 then we go into the dancing mode of the belt.
   while (mode  == 1) {
@@ -211,6 +213,8 @@ void getValues() {
     float crossXY = sqrt(xNorm * yNorm);
     colourLED = colourSize * crossXY;
   }
+  //Increment this variable to become closer to changing the
+  //colour of the LED's
   changeAccelColour += 1;
 }
 
@@ -219,23 +223,22 @@ void getValues() {
  *  -------------------------
  *  Detects if the users current motion is setting a motion to set a 
  *  mode and if so sets the global variable mode to represent this. 
- *  Setting mode to eiather 1 to represent dancing or 2 representing 
+ *  Setting mode to either 1 to represent dancing or 2 representing 
  *  running.
  *
  *  Return: Void
  */
 void detectMode() {
   float rotation = abs(currentDirection - previousDirection);
-  //This could be Y cant check till monday!
   float acceleration = abs(prevX - currentX);
   //As rotating creates acceleration in x and y, check rotation 
   //first to ensure that that wasnt the intended motion.  
-  if (rotation > 15 ) {
+  if (rotation > 40 ) {
     mode = 1;
   }
-  //Detects if user is accelerating forward and isnt rotating
+  //Detects if user is accelerating forward and isn't rotating
   //and if so sets belt to running mode.
-  else if (acceleration > 400) {
+  else if (acceleration > 800) {
     mode = 2;
   }
 }
@@ -256,10 +259,10 @@ void dancingMode() {
   int changeDegrees = currentDirection - previousDirection;
   if (abs(changeDegrees) > 15) {
     if (changeDegrees > 0) {
-      danceDirection = 1;
+      danceDirection = 0;
     }
     else {
-      danceDirection = 0;
+      danceDirection = 1  ;
     }
   }
   delay(100);
@@ -278,28 +281,28 @@ void dancingMode() {
 void setDance() {
   if (danceDirection == 1) {
     //Set new pixels to colour
-    strip.setPixelColor((danceLocation + 1) % 16, colorArray[colourLED]);
-    strip.setPixelColor((danceLocation + 5) % 16, colorArray[colourLED]);
-    strip.setPixelColor((danceLocation + 9) % 16, colorArray[colourLED]);
-    strip.setPixelColor((danceLocation + 13) % 16, colorArray[colourLED]);
+    strip.setPixelColor((danceLocation + 1) % 16, colorArray[39 - colourLED]);
+    strip.setPixelColor((danceLocation + 5) % 16, colorArray[39 - colourLED]);
+    strip.setPixelColor((danceLocation + 9) % 16, colorArray[39 - colourLED]);
+    strip.setPixelColor((danceLocation + 13) % 16, colorArray[39 - colourLED]);
     //Reset Previous pixels to non rotating colour.
     strip.setPixelColor(danceLocation, colorArray[6]);
-    strip.setPixelColor((danceLocation + 4) % 16, colorArray[colourLED - 1]);
-    strip.setPixelColor((danceLocation + 8) % 16, colorArray[colourLED - 1]);
-    strip.setPixelColor((danceLocation + 12) % 16, colorArray[colourLED - 1]);
+    strip.setPixelColor((danceLocation + 4) % 16, colorArray[39 - (colourLED + 1)]);
+    strip.setPixelColor((danceLocation + 8) % 16, colorArray[39 - (colourLED + 1)]);
+    strip.setPixelColor((danceLocation + 12) % 16, colorArray[39 - (colourLED + 1)]);
     danceLocation = (danceLocation + 1) % 16;
   }
   else {
     //Set new pixels to colour
-    strip.setPixelColor((danceLocation + 15) % 16, colorArray[colourLED]);
-    strip.setPixelColor((danceLocation + 11) % 16, colorArray[colourLED]);
-    strip.setPixelColor((danceLocation + 7) % 16, colorArray[colourLED]);
-    strip.setPixelColor((danceLocation + 3) % 16, colorArray[colourLED]);
+    strip.setPixelColor((danceLocation + 15) % 16, colorArray[40 - colourLED]);
+    strip.setPixelColor((danceLocation + 11) % 16, colorArray[40 - colourLED]);
+    strip.setPixelColor((danceLocation + 7) % 16, colorArray[40 - colourLED]);
+    strip.setPixelColor((danceLocation + 3) % 16, colorArray[40 - colourLED]);
     //Reset Previous pixels to non rotating colour.
     strip.setPixelColor(danceLocation, colorArray[6]);
-    strip.setPixelColor((danceLocation + 4) % 16, colorArray[colourLED - 1]);
-    strip.setPixelColor((danceLocation + 8) % 16, colorArray[colourLED - 1]);
-    strip.setPixelColor((danceLocation + 12) % 16, colorArray[colourLED - 1]);
+    strip.setPixelColor((danceLocation + 4) % 16, colorArray[40 - (colourLED + 1)]);
+    strip.setPixelColor((danceLocation + 8) % 16, colorArray[40 - (colourLED + 1)]);
+    strip.setPixelColor((danceLocation + 12) % 16, colorArray[40 - (colourLED + 1)]);
     danceLocation = (danceLocation + 15) % 16;
   }
   strip.show();
@@ -308,18 +311,25 @@ void setDance() {
 /*
  *  Function: runningMode
  * -----------------------
- *
- *
+ *  This function simply tracks the rotation of
+ *  two positions accros the belt and on each loop moves
+ *  these positions in unison across the belt. 
+ *  
  *
  *  Return: Void
  *
  */
 void runningMode() {
     runningSetPixel();
-    
+    //As we use an integer to track the location of the left
+    //roating pixel ensure that when it crosses from the 
+    //0'th pixel to the 15th that it is set to 15.
     if (--leftIn%16 == -1) {
     	leftIn = 15;
     }
+    //If left in equals 10 than the pixels
+    //have traversed the entire belt and need to be 
+    //reset to strating positions.
     if(leftIn == 10) {
        leftIn = 2;
        rightIn = 3;
@@ -334,22 +344,24 @@ void runningMode() {
 /*
  *  Function: runningSetPixel
  *  --------------------------
- *
+ *  Sets the pixels on the belt to represent the
+ *  location of the two traveling pixels in running mode.
+ *  The colour of these pixels is dependant on the users soeed.
  *
  *  Return: Void
  *
  */
 void runningSetPixel() {
   getValues();
-  Serial.println(leftIn);
   strip.setPixelColor(leftIn, colorArray[colourLED]);
   strip.setPixelColor(rightIn, colorArray[colourLED]);
   //Reset previous led to white.
+  //Need to ensure for the  edge case that leftIn has just been
+  //reset to 2, this implies that the previous two pixels where
+  //10 and 11 so we need to reset those.
   if (leftIn == 2) {
     strip.setPixelColor(10, colorArray[0]);
-    strip.setPixelColor(11, colorArray[0]);
-    strip.setPixelColor(leftIn, colorArray[colourLED]);
-    strip.setPixelColor(rightIn, colorArray[colourLED]);   
+    strip.setPixelColor(11, colorArray[0]); 
    } else {
      if (leftIn != 11) {
        strip.setPixelColor((leftIn+1)%16, colorArray[0]);
@@ -362,30 +374,44 @@ void runningSetPixel() {
   strip.show();
 }
 
-// Slightly different, this makes the rainbow equally distributed throughout
-void rainbowCycle(uint8_t wait) {
-  uint16_t i, j;
-
-  for (j = 0; j < 256 * 1; j++) { // 5 cycles of all colors on wheel
-    for (i = 0; i < strip.numPixels(); i++) {
-      strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
+/*
+ *  Function: lightCycle
+ *  Cycles lights across the entire belt, utilizing findColour to retrieve a
+ *  Rainbow like effect.
+ *
+ *  Return: Void.
+ *
+ */
+void lightCycle(uint8_t wait) {
+  uint16_t k, x;
+  for (x = 0; x < 256; x++) { 
+    for (k = 0; k < strip.numPixels(); k++) {
+      strip.setPixelColor(k, findColour(((k * 256 / strip.numPixels()) + x) & 255));
     }
     strip.show();
     delay(wait);
   }
 }
 
-// Input a value 0 to 255 to get a color value.
-// The colours are a transition r - g - b - back to r.
-uint32_t Wheel(byte WheelPos) {
-  WheelPos = 255 - WheelPos;
-  if (WheelPos < 85) {
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
-  } else if (WheelPos < 170) {
-    WheelPos -= 85;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+/*
+ *  Function: findColour
+ *  ----------------------
+ *  Recieves an input colour in range of 0 to 255 and 
+ *  returns a colour.
+ *
+ *  pos: A number to base the returned colour on.
+ *
+ *  Return: Returns a colour value.
+ */
+uint32_t findColour(byte pos) {
+  pos = 255 - pos;
+  if (pos < 85) {
+    return strip.Color(255 - pos * 3, 0, pos * 3);
+  } else if (pos < 170) {
+    pos -= 85;
+    return strip.Color(0, pos * 3, 255 - pos * 3);
   } else {
-    WheelPos -= 170;
-    return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+    pos -= 170;
+    return strip.Color(pos * 3, 255 - pos * 3, 0);
   }
 }
