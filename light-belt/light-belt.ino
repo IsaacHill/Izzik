@@ -104,22 +104,29 @@ float xMax = 2040;
 float yMin = -2040;
 float yMax = 2040;
 
-//left counter variable for running
+//Left counter variable for running
 int leftIn = 2;
-//right counter variable for running
+//Right counter variable for running
 int rightIn = 3;
 
-
-//the timer used for detecting when breaks must be cleared
-long breakTime;
-
-//Runs whenn arduino is first turn
+/*
+ *  Function: setup
+ *  -----------------------
+ *  Runs when the arduino is first turned on, initializes the
+ *  chain of LEDs and turns them on. Also detects if the accelerometer
+ *  is connected and if it is not found stops the arduino and 
+ *  prints an error message.
+ *
+ *  Return: Void.
+ */
+//Runs whenn arduino is first turned on, initializes the 
+//chain of LEDs and turns them on.
 void setup() {
   strip.begin();
   strip.setBrightness(255);
   strip.show();
   Serial.begin(9600);
-  // initialize the digital pin as an output.
+  // Initialize the digital pin as an output.
   if (!lsm.begin()) {
     /* There was a problem detecting the ADXL345 ... check your connections */
     Serial.println("Ooops, no LSM303 detected ... Check your wiring!");
@@ -127,12 +134,21 @@ void setup() {
   }
 }
 
-// the loop routine runs over and over again forever:
+/*
+ *  Function: loop
+ *  ---------------------
+ *  After the arduino has run setup, this function loops infinetely
+ *  and depending on several global variables places the arduino in either
+ *  detectMode, runningMode or dancingMode
+ *
+ *  Return: Void
+ */
 void loop() {
   //Need to find the mode as given by users motion
   while (mode == 0) {
     //Sets up reading frame for lsm
     lsm.read();
+    //read in acceleration values from arduino.
     currentX = (int)lsm.accelData.x;
     currentY = (int)lsm.accelData.y;
     //Find the current orientation of the device
@@ -157,45 +173,63 @@ void loop() {
     //rotation to inform user.
     rainbowCycle(1.5);
   }
+  //If mode == 1 then we go into the dancing mode of the belt.
   while (mode  == 1) {
     dancingMode();
   }
+  //If mode == 2 then we go into the running mode of the belt.
   while (mode == 2) {
     runningMode();
   }
 }
 
-//Read in new data from accelerometer/magnetometer
+/*
+ *  Function: getValues
+ *  ------------------------
+ *  Reads in new values fromaccelerometer/magnetometer.
+ * 
+ *  Return: Void
+ */
 void getValues() {
+  //Set the previous values to the old current values.
   prevX = currentX;
   prevY = currentY;
+  //Set the previous values to the old direction.
   previousDirection = currentDirection;
+  //Sets up a new reading frame from the lsm.
   lsm.read();
+  //Read in new values for x and y acceleration.
   currentX = (int)lsm.accelData.x;
   currentY = (int)lsm.accelData.y;
+  //Find current heading (from North) in degrees.
   currentDirection = (atan2(lsm.magData.y, lsm.magData.x) * 180) / pi;
+  //This if statement activates every four loops of the function
   if (changeAccelColour % 4 == 0) {
-    //Normalize acceleration
+    //Normalize acceleration based on max values for the accelerometer
     float xNorm = abs(currentX) / xMax;
     float yNorm = abs(currentY) / yMax;
     float crossXY = sqrt(xNorm * yNorm);
     colourLED = colourSize * crossXY;
-    Serial.print("Colour Choice ");
-    Serial.println(colourLED);
   }
   changeAccelColour += 1;
 }
 
-//Detects if the users motion is setting a mode and if so
-//sets mode to the relevant integer.
+/*
+ *  Function: detectMode
+ *  -------------------------
+ *  Detects if the users current motion is setting a motion to set a 
+ *  mode and if so sets the global variable mode to represent this. 
+ *  Setting mode to eiather 1 to represent dancing or 2 representing 
+ *  running.
+ *
+ *  Return: Void
+ */
 void detectMode() {
   float rotation = abs(currentDirection - previousDirection);
-  Serial.println(currentDirection);
-  Serial.println(previousDirection);
   //This could be Y cant check till monday!
   float acceleration = abs(prevX - currentX);
-  Serial.println("rotation");
-  Serial.println(rotation);
+  //As rotating creates acceleration in x and y, check rotation 
+  //first to ensure that that wasnt the intended motion.  
   if (rotation > 15 ) {
     mode = 1;
   }
@@ -206,7 +240,14 @@ void detectMode() {
   }
 }
 
-//function that loops when mode is set to dancing.
+/*
+ *  Function: dancingMode 
+ *  ------------------------
+ *  The main mode that runs when the arduino is currently set 
+ *  to dancing mode. 
+ *
+ *  Return: Void
+ */
 void dancingMode() {
   getValues();
   setDance();
@@ -214,21 +255,26 @@ void dancingMode() {
   //read of the heading.
   int changeDegrees = currentDirection - previousDirection;
   if (abs(changeDegrees) > 15) {
-    Serial.print("Im Changing Modes to:  ");
-    Serial.println(changeDegrees);
     if (changeDegrees > 0) {
-      Serial.println("positive");
       danceDirection = 1;
     }
     else {
-      Serial.println("Negative");
       danceDirection = 0;
     }
   }
   delay(100);
 }
 
-
+/*
+ * Function: setDance
+ * ------------------
+ *  Detects the users last dance direction and sets the LEDs 
+ *  one more along the chain in that direction to a colour depending
+ *  on the users current acceleration. It then resets the previous LEDs
+ *  colour.
+ *
+ *  Return: Void.
+ */
 void setDance() {
   if (danceDirection == 1) {
     //Set new pixels to colour
@@ -259,8 +305,15 @@ void setDance() {
   strip.show();
 }
 
-
-//Mode that loops when mode is set to running
+/*
+ *  Function: runningMode
+ * -----------------------
+ *
+ *
+ *
+ *  Return: Void
+ *
+ */
 void runningMode() {
     runningSetPixel();
     
@@ -278,6 +331,14 @@ void runningMode() {
   
 }
 
+/*
+ *  Function: runningSetPixel
+ *  --------------------------
+ *
+ *
+ *  Return: Void
+ *
+ */
 void runningSetPixel() {
   getValues();
   Serial.println(leftIn);
